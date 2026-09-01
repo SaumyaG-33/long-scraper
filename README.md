@@ -53,9 +53,21 @@ Every scraped product lands in the `products` collection in MongoDB, matching
 the schema documented in `scrapers/base_scraper.py`. Re-running the scraper
 upserts (updates existing products by URL, doesn't duplicate).
 
+## Scrapers
+
+| retailer        | approach                                  | notes                                   |
+|-----------------|-------------------------------------------|-----------------------------------------|
+| `amalli_talli`  | Shopify `products.json` / `.js`           | tall-specific brand, most reliable      |
+| `comfrt`        | Shopify `/products/<handle>.js`           | not tall-specific                       |
+| `uniqlo`        | private commerce JSON API                 | not tall-specific                       |
+| `old_navy`      | DOM via `data-testid`                     | not tall-specific                       |
+| `madewell`      | JSON-LD `Product` + DOM/og fallback       | behind Akamai; needs real Chromium      |
+| `asos_tall`     | DOM selectors                             | selectors unverified against live site  |
+| `hm`, `zara`    | stubs in `mainstream_stubs.py`            | not built                               |
+
 ## Next steps after this works
 
 1. Get `asos_tall` reliably pulling 100+ products across a few categories
-2. Fill in `mainstream_stubs.py` for Uniqlo → H&M → Zara (in that order —
-   easiest to hardest)
-3. Move to Phase 2: CLIP embeddings over the scraped catalog
+   (or drop it if bot detection makes it not worth the effort — the niche
+   Shopify brands are the reliable path)
+2. Move to Phase 2: CLIP embeddings over the scraped catalog

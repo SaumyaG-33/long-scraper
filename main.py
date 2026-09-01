@@ -14,6 +14,8 @@ from scrapers.asos_tall import AsosTallScraper
 from scrapers.uniqlo import UniqloScraper
 from scrapers.comfrt import ComfrtScraper
 from scrapers.old_navy import OldNavyScraper
+from scrapers.amalli_talli import AmalliTalliScraper
+from scrapers.madewell import MadewellScraper
 from db import upsert_products
 
 SCRAPERS = {
@@ -21,6 +23,8 @@ SCRAPERS = {
     "uniqlo": UniqloScraper,
     "comfrt": ComfrtScraper,
     "old_navy": OldNavyScraper,
+    "amalli_talli": AmalliTalliScraper,
+    "madewell": MadewellScraper,
     # "hm": HMScraper,
     # "zara": ZaraScraper,
 }
