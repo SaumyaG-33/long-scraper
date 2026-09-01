@@ -16,7 +16,7 @@ from scrapers.comfrt import ComfrtScraper
 from scrapers.old_navy import OldNavyScraper
 from scrapers.amalli_talli import AmalliTalliScraper
 from scrapers.madewell import MadewellScraper
-from db import upsert_products
+from db import upsert_products, validate_product
 
 SCRAPERS = {
     "asos_tall": AsosTallScraper,
@@ -43,8 +43,15 @@ def main():
 
     print(f"\nScraped {len(products)} products from {args.retailer}")
 
+    invalid = [(p, validate_product(p)) for p in products]
+    invalid = [(p, probs) for p, probs in invalid if probs]
+    if invalid:
+        print(f"\n{len(invalid)}/{len(products)} products fail validation:")
+        for p, probs in invalid[:10]:
+            print(f"  {p.get('source_url') or p.get('name')}: {'; '.join(probs)}")
+
     if args.dry_run:
-        print("Dry run — not writing to DB. Sample product:")
+        print("\nDry run — not writing to DB. Sample product:")
         if products:
             print(products[0])
         return
