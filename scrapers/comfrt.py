@@ -83,9 +83,53 @@ class ComfrtScraper(BaseScraper):
             "image_urls": image_urls[:5],
             "sizes_available": sizes,
             "tall_specific": False,
-            "category": (item.get("type") or "other").lower(),
+            "category": self._guess_category(item.get("type"), name),
             "description": description,
         }
+
+    # Comfrt's Shopify product_type is free-form (hoodie, sweatpants, kids
+    # sweatshirt, blanket, bag, ...). Map it — plus the product name — onto
+    # the fixed category set from base_scraper.py; anything non-apparel
+    # (blankets, bags) falls through to "other".
+    CATEGORY_KEYWORDS = [
+        ("jean", "jeans"),
+        ("denim", "jeans"),
+        ("dress", "dresses"),
+        ("jumpsuit", "dresses"),
+        ("romper", "dresses"),
+        ("skirt", "skirts"),
+        ("short", "shorts"),
+        ("jogger", "pants"),
+        ("sweatpant", "pants"),
+        ("legging", "pants"),
+        ("trouser", "pants"),
+        ("pant", "pants"),
+        ("hoodie", "tops"),
+        ("sweatshirt", "tops"),
+        ("quarter-zip", "tops"),
+        ("quarter zip", "tops"),
+        ("pullover", "tops"),
+        ("crew", "tops"),
+        ("tee", "tops"),
+        ("t-shirt", "tops"),
+        ("shirt", "tops"),
+        ("tank", "tops"),
+        ("bra", "tops"),
+        ("sweater", "tops"),
+        ("cardigan", "tops"),
+        ("top", "tops"),
+        ("jacket", "jackets"),
+        ("shacket", "jackets"),
+        ("coat", "jackets"),
+    ]
+
+    @classmethod
+    def _guess_category(cls, product_type: Optional[str], name: str) -> str:
+        haystack = f"{product_type or ''} {name or ''}".lower()
+        for keyword, category in cls.CATEGORY_KEYWORDS:
+            if keyword in haystack:
+                return category
+        return "other"
 
 
 if __name__ == "__main__":
