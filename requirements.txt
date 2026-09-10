@@ -2,3 +2,13 @@ playwright==1.47.0
 pymongo==4.9.1
 python-dotenv==1.0.1
 tenacity==9.0.0
+
+# Phase 2 — embeddings / search
+open_clip_torch==2.26.1
+torch==2.4.1
+torchvision==0.19.1
+Pillow==10.4.0
+pillow-avif-plugin==1.4.6
+requests==2.32.3
+fastapi==0.115.0
+uvicorn==0.30.6
