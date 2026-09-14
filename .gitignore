@@ -4,3 +4,7 @@ __pycache__/
 *.pyc
 .DS_Store
 .claude/settings.local.json
+
+# fit_model: raw dataset is ~120MB, re-downloadable via download_data.py
+fit_model/data/*.json
+fit_model/data/*.json.gz
