@@ -6,12 +6,18 @@ Phase 2, step 3: HTTP + minimal web UI for catalog text search.
 
     GET  /              -> the search page
     POST /search        -> {"query": "...", "k": 20, "category": null,
-                            "max_price": null, "include_non_tall": false}
+                            "max_price": null, "include_non_tall": false,
+                            "height_in": null, "weight_lbs": null}
                            -> {"query": ..., "results": [ ... ]}
 
 The heavy lifting (CLIP encode + Atlas $vectorSearch + colourway collapse)
 lives in search.py; this file is just transport + a single HTML page.
 The CLIP model loads once on first request.
+
+height_in is optional — when given, each result gets a `fit_probability`
+field ({"small": p, "fit": p, "large": p}) from fit_model/, scored against
+that height (see fit_model/catalog_bridge.py for the honest scope of what
+that model actually predicts and from what data).
 """
 from __future__ import annotations
 
@@ -32,6 +38,8 @@ class SearchRequest(BaseModel):
     category: Optional[str] = None
     max_price: Optional[float] = None
     include_non_tall: bool = False
+    height_in: Optional[float] = None
+    weight_lbs: Optional[float] = None
 
 
 @app.post("/search")
@@ -42,6 +50,8 @@ def do_search(req: SearchRequest) -> dict:
         category=req.category,
         max_price=req.max_price,
         tall_only=not req.include_non_tall,
+        height_in=req.height_in,
+        weight_lbs=req.weight_lbs,
     )
     return {"query": req.query, "count": len(results), "results": results}
 
@@ -96,7 +106,14 @@ _PAGE = """<!doctype html>
   .price { color: inherit; font-weight: 600; }
   .tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 6px;
          background: #e7f0ea; color: #2f6f4f; }
-  @media (prefers-color-scheme: dark) { .tag { background: #24382c; } }
+  .tag.fit-good { background: #e7f0ea; color: #2f6f4f; }
+  .tag.fit-mid { background: #f5eee0; color: #8a6d1f; }
+  .tag.fit-poor { background: #f5e3e0; color: #a5432f; }
+  @media (prefers-color-scheme: dark) {
+    .tag { background: #24382c; }
+    .tag.fit-mid { background: #3a301a; }
+    .tag.fit-poor { background: #3a241f; }
+  }
 </style>
 </head>
 <body>
@@ -109,6 +126,8 @@ _PAGE = """<!doctype html>
     <option>dresses</option><option>skirts</option><option>shorts</option><option>jackets</option>
   </select>
   <input type="number" id="max_price" placeholder="max $" min="0" step="10" style="width:100px">
+  <input type="number" id="height_in" placeholder="height (in)" min="48" max="90" step="1" style="width:110px"
+         title="Optional — e.g. 71 for 5'11&quot;. Scores each result with the fit-probability model.">
   <label class="chk"><input type="checkbox" id="non_tall"> include non-tall</label>
   <button type="submit" id="go">Search</button>
 </form>
@@ -131,6 +150,7 @@ f.addEventListener('submit', async (e) => {
         category: document.getElementById('category').value || null,
         max_price: parseFloat(document.getElementById('max_price').value) || null,
         include_non_tall: document.getElementById('non_tall').checked,
+        height_in: parseFloat(document.getElementById('height_in').value) || null,
       }),
     });
     const data = await r.json();
@@ -161,10 +181,17 @@ function card(p) {
           <span class="price">$${p.price.toFixed(0)}</span>
           <span>${p.category}${colours}</span>
         </div>
-        <div class="row"><span>score ${p.score.toFixed(3)}</span>${tall}</div>
+        <div class="row"><span>score ${p.score.toFixed(3)}</span>${tall}${fitTag(p.fit_probability)}</div>
       </div>
     </a>`;
   return el;
+}
+
+function fitTag(fitProbability) {
+  if (!fitProbability) return '';
+  const fitP = fitProbability.fit || 0;
+  const cls = fitP >= 0.45 ? 'fit-good' : fitP >= 0.3 ? 'fit-mid' : 'fit-poor';
+  return `<span class="tag ${cls}" title="small ${((fitProbability.small||0)*100).toFixed(0)}% · fit ${(fitP*100).toFixed(0)}% · large ${((fitProbability.large||0)*100).toFixed(0)}%">${(fitP*100).toFixed(0)}% fit</span>`;
 }
 </script>
 </body>
